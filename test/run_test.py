@@ -21,6 +21,7 @@ from torch.testing._internal.common_utils import (
     IS_IN_CI,
     TEST_WITH_ROCM,
     shell,
+    _get_test_report_path,
     set_cwd,
     parser as common_parser,
 )
@@ -80,6 +81,7 @@ def discover_tests(
     if extra_tests is not None:
         rc += extra_tests
     return sorted(rc)
+
 
 TESTS = discover_tests(
     blocklisted_patterns=[
@@ -379,18 +381,22 @@ def get_test_case_args(test_module, using_pytest) -> List[str]:
     return args
 
 
-def get_executable_command(options, allow_pytest, disable_coverage=False):
+def get_executable_command(test_module, options, allow_pytest, disable_coverage=False):
     if options.coverage and not disable_coverage:
         executable = ["coverage", "run", "--parallel-mode", "--source=torch"]
     else:
         executable = [sys.executable]
-    if options.pytest:
-        if allow_pytest:
-            executable += ["-m", "pytest"]
-        else:
-            print_to_stderr(
-                "Pytest cannot be used for this test. Falling back to unittest."
-            )
+    if allow_pytest:
+        subprocess.run([sys.executable, "-m", "pip", "install", "pytest", "pytest-xdist"])
+        test_module = f"{test_module}.xml"
+        test_report_path = _get_test_report_path()
+        test_report_path = os.path.join(test_report_path, test_module)
+        os.makedirs(test_report_path, exist_ok=True)
+        executable = ["pytest", f"--junitxml={test_report_path}"]
+    else:
+        print_to_stderr(
+            "Pytest cannot be used for this test. Falling back to unittest."
+        )
     return executable
 
 
@@ -411,9 +417,6 @@ def run_test(
     # If using pytest, replace -f with equivalent -x
     if options.pytest:
         unittest_args = [arg if arg != "-f" else "-x" for arg in unittest_args]
-    elif IS_IN_CI:
-        # use the downloaded test cases configuration, not supported in pytest
-        unittest_args.extend(["--import-slow-tests", "--import-disabled-tests"])
 
     # Multiprocessing related tests cannot run with coverage.
     # Tracking issue: https://github.com/pytorch/pytorch/issues/50661
@@ -422,9 +425,9 @@ def run_test(
     )
 
     # Extra arguments are not supported with pytest
-    executable = get_executable_command(
-        options, allow_pytest=not extra_unittest_args, disable_coverage=disable_coverage
-    )
+    executable = get_executable_command(test_module,
+                                        options, allow_pytest=not extra_unittest_args, disable_coverage=disable_coverage
+                                        )
 
     # TODO: move this logic into common_utils.py instead of passing in "-k" individually
     # The following logic for running specified tests will only run for non-distributed tests, as those are dispatched
@@ -446,12 +449,12 @@ def test_cuda_primary_ctx(test_module, test_directory, options):
         test_module, test_directory, options, extra_unittest_args=["--subprocess"]
     )
 
+
 run_test_with_subprocess = functools.partial(run_test, extra_unittest_args=["--subprocess"])
 
 
 def get_run_test_with_subprocess_fn():
     return lambda test_module, test_directory, options: run_test_with_subprocess(test_module, test_directory, options)
-
 
 
 def _test_cpp_extensions_aot(test_directory, options, use_ninja):
@@ -617,6 +620,7 @@ CUSTOM_HANDLERS = {
     "distributed/rpc/test_share_memory": get_run_test_with_subprocess_fn(),
     "distributed/rpc/cuda/test_tensorpipe_agent": get_run_test_with_subprocess_fn(),
 }
+
 
 def parse_test_module(test):
     return test.split(".")[0]
@@ -1051,8 +1055,6 @@ def main():
                 continue
             has_failed = True
             failure_messages.append(err_message)
-            if not options_clone.continue_through_error:
-                raise RuntimeError(err_message)
             print_to_stderr(err_message)
     finally:
         if options.coverage:
@@ -1067,7 +1069,7 @@ def main():
                 if not PYTORCH_COLLECT_COVERAGE:
                     cov.html_report()
 
-    if options.continue_through_error and has_failed:
+    if has_failed:
         for err in failure_messages:
             print_to_stderr(err)
         sys.exit(1)
