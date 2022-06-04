@@ -392,7 +392,7 @@ def get_executable_command(test_module, options, allow_pytest, disable_coverage=
         test_report_path = _get_test_report_path()
         test_report_path = os.path.join(test_report_path, test_module)
         os.makedirs(test_report_path, exist_ok=True)
-        executable = ["pytest", f"--junitxml={test_report_path}"]
+        executable = ["pytest", f"--junitxml={test_report_path}", "-n", "2"]
     else:
         print_to_stderr(
             "Pytest cannot be used for this test. Falling back to unittest."
