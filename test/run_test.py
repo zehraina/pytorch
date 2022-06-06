@@ -395,6 +395,7 @@ def get_executable_command(options, allow_pytest, disable_coverage=False):
 def run_test(
     test_module, test_directory, options, launcher_cmd=None, extra_unittest_args=None
 ):
+    subprocess.run([sys.executable, "-m", "pip", "install", "pytest", "pytest-xdist"])
     unittest_args = options.additional_unittest_args.copy()
     if options.verbose:
         unittest_args.append(f'-{"v"*options.verbose}')  # in case of pytest
@@ -1051,8 +1052,6 @@ def main():
                 continue
             has_failed = True
             failure_messages.append(err_message)
-            if not options_clone.continue_through_error:
-                raise RuntimeError(err_message)
             print_to_stderr(err_message)
     finally:
         if options.coverage:
@@ -1067,7 +1066,7 @@ def main():
                 if not PYTORCH_COLLECT_COVERAGE:
                     cov.html_report()
 
-    if options.continue_through_error and has_failed:
+    if has_failed:
         for err in failure_messages:
             print_to_stderr(err)
         sys.exit(1)
