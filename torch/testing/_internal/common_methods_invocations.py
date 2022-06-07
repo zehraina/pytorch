@@ -7098,7 +7098,7 @@ def sample_inputs_svd(op_info, device, dtype, requires_grad=False, **kwargs):
     make_fullrank = make_fullrank_matrices_with_distinct_singular_values
     make_arg = partial(make_fullrank, dtype=dtype, device=device, requires_grad=requires_grad)
 
-    is_linalg_svd = (op_info.name == "linalg.svd")
+    is_linalg_svd = ("linalg.svd" in op_info.name)
     batches = [(), (0, ), (3, )]
     ns = [0, 3, 5]
 
@@ -20280,6 +20280,21 @@ python_ref_db = [
     ReductionPythonRefInfo(
         "_refs.linalg.vector_norm",
         torch_opinfo_name="linalg.vector_norm",
+        supports_out=True,
+    ),
+    PythonRefInfo(
+        "_refs.linalg.svd",
+        torch_opinfo_name="linalg.svd",
+        supports_out=True,
+        decorators=(
+            # The wrapper for multiple outputs is wrong (see the note in out_wrapper_multi)
+            DecorateInfo(unittest.expectedFailure, 'TestCommon', 'test_out',),
+            DecorateInfo(unittest.expectedFailure, 'TestCommon', 'test_out_warning',),
+        ),
+    ),
+    PythonRefInfo(
+        "_refs.linalg.svdvals",
+        torch_opinfo_name="linalg.svdvals",
         supports_out=True,
     ),
     #
