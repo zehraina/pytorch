@@ -47,6 +47,7 @@ import torch.testing._internal.opinfo_helper as opinfo_helper
 import torch._refs as refs  # noqa: F401
 import torch._refs.nn.functional
 import torch._refs.special
+import torch._refs.linalg
 
 import torch._prims as prims  # noqa: F401
 
@@ -20272,6 +20273,14 @@ python_ref_db = [
         decorators=(
             DecorateInfo(unittest.expectedFailure, 'TestCommon', 'test_python_ref',),
         ),
+    ),
+    #
+    # torch.linalg
+    #
+    ReductionPythonRefInfo(
+        "_refs.linalg.vector_norm",
+        torch_opinfo_name="linalg.vector_norm",
+        supports_out=True,
     ),
     #
     # Tensor Creation Reference OpInfos
