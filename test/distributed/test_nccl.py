@@ -23,6 +23,7 @@ nGPUs = torch.cuda.device_count()
 if not TEST_CUDA:
     print('CUDA not available, skipping tests', file=sys.stderr)
     TestCase = object  # noqa: F811
+    sys.exit(0)
 
 
 datatypes = [torch.float]

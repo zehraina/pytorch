@@ -17,6 +17,7 @@ TEST_MULTIGPU = TEST_CUDA and torch.cuda.device_count() >= 2
 if not TEST_CUDA:
     print('CUDA not available, skipping tests', file=sys.stderr)
     TestCase = object  # noqa: F811
+    sys.exit(0)
 
 
 class TestCudaPrimaryCtx(TestCase):

@@ -14,6 +14,7 @@ from torch.testing._internal.common_cuda import _get_torch_cuda_version
 if not TEST_CUDA:
     print('CUDA not available, skipping tests', file=sys.stderr)
     TestCase = object  # noqa: F811
+    sys.exit(0)
 
 
 code_string = "template <typename T> T my_fused_kernel(T x, T y, T alpha, T beta) { return alpha * x + beta * y; }"
