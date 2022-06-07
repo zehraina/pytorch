@@ -19438,6 +19438,18 @@ op_db: List[OpInfo] = [
         supports_one_python_scalar=True,
         supports_autograd=False,
     ),
+    UnaryUfuncInfo(
+        'special.exponential_integral_e1',
+        dtypes=all_types_and(torch.bool),
+        ref=scipy.special.exp1 if TEST_SCIPY else _NOTHING,
+        supports_autograd=False,
+    ),
+    UnaryUfuncInfo(
+        'special.exponential_integral_ei',
+        dtypes=all_types_and(torch.bool),
+        ref=scipy.special.expi if TEST_SCIPY else _NOTHING,
+        supports_autograd=False,
+    ),
     BinaryUfuncInfo(
         'special.hermite_polynomial_h',
         dtypes=all_types_and(torch.bool),
