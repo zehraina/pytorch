@@ -1940,9 +1940,6 @@ const auto chebyshev_polynomial_w_string = jiterator_stringify(
 
 const auto exponential_integral_e1_string = jiterator_stringify(
     template<typename T>
-    T exponential_integral_ei_forward(T x); // T exponential_integral_ei_forward(T x)
-
-    template<typename T>
     T exponential_integral_e1_forward(T x) {
         if (x < T(0)) {
             return -exponential_integral_ei_forward(-x);
@@ -2059,9 +2056,6 @@ const auto exponential_integral_e1_string = jiterator_stringify(
 ); // exponential_integral_e1_string
 
 const auto exponential_integral_ei_string = jiterator_stringify(
-    template<typename T>
-    T exponential_integral_e1_forward(T x); // T exponential_integral_ei_forward(T x)
-
     template<typename T>
     T exponential_integral_ei_forward(T x) {
         if (x < T(0)) {
