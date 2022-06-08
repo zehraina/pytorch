@@ -1953,7 +1953,7 @@ const auto exponential_integral_e1_string = jiterator_stringify(
             T q = T(0);
             T r = T(0);
 
-            for (uint16_t index = 1; index < 1000; index++) {
+            for (int16_t index = 1; index < 1000; index++) {
                 p = p * (-x / index);
 
                 if (abs(p) < T(1.11022302462515654042e-16)) {
@@ -1977,7 +1977,7 @@ const auto exponential_integral_e1_string = jiterator_stringify(
             T s = T(1) / q;
             T t = s;
 
-            for (uint16_t index = 1; index <= 1000; index++) {
+            for (int16_t index = 1; index <= 1000; index++) {
                 p = -T(index * index);
                 q = q + T(2);
                 s = T(1) / (p * s + q);
@@ -1994,7 +1994,7 @@ const auto exponential_integral_e1_string = jiterator_stringify(
         T q = T(1);
         T r = T(0);
 
-        for (uint16_t index = 1; index < 1000; index++) {
+        for (int16_t index = 1; index < 1000; index++) {
             T previous = p;
 
             p = p * (-index / x);
@@ -2023,7 +2023,7 @@ const auto exponential_integral_e1_string = jiterator_stringify(
             T p = T(1);
             T q = T(0);
 
-            for (uint16_t index = 1; index < 1000; index++) {
+            for (int16_t index = 1; index < 1000; index++) {
                 p = p * (x / index);
                 q = q + (p / index);
 
@@ -2038,7 +2038,7 @@ const auto exponential_integral_e1_string = jiterator_stringify(
         T p = T(1);
         T q = T(1);
 
-        for (uint16_t index = 1; index < 1000; index++) {
+        for (int16_t index = 1; index < 1000; index++) {
             T previous = p;
 
             p = p * (index / x);
@@ -2072,7 +2072,7 @@ const auto exponential_integral_ei_string = jiterator_stringify(
             T p = T(1);
             T q = T(0);
 
-            for (uint16_t index = 1; index < 1000; index++) {
+            for (int16_t index = 1; index < 1000; index++) {
                 p = p * (x / index);
                 q = q + (p / index);
 
@@ -2087,7 +2087,7 @@ const auto exponential_integral_ei_string = jiterator_stringify(
         T p = T(1);
         T q = T(1);
 
-        for (uint16_t index = 1; index < 1000; index++) {
+        for (int16_t index = 1; index < 1000; index++) {
             T previous = p;
 
             p = p * (index / x);
@@ -2117,7 +2117,7 @@ const auto exponential_integral_ei_string = jiterator_stringify(
             T q = T(0);
             T r = T(0);
 
-            for (uint16_t index = 1; index < 1000; index++) {
+            for (int16_t index = 1; index < 1000; index++) {
                 p = p * (-x / index);
 
                 if (abs(p) < T(1.11022302462515654042e-16)) {
@@ -2141,7 +2141,7 @@ const auto exponential_integral_ei_string = jiterator_stringify(
             T s = T(1) / q;
             T t = s;
 
-            for (uint16_t index = 1; index <= 1000; index++) {
+            for (int16_t index = 1; index <= 1000; index++) {
                 p = -T(index * index);
                 q = q + T(2);
                 s = T(1) / (p * s + q);
@@ -2158,7 +2158,7 @@ const auto exponential_integral_ei_string = jiterator_stringify(
         T q = T(1);
         T r = T(0);
 
-        for (uint16_t index = 1; index < 1000; index++) {
+        for (int16_t index = 1; index < 1000; index++) {
             T previous = p;
 
             p = p * (-index / x);
