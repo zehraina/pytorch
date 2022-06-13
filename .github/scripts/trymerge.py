@@ -391,6 +391,7 @@ def parse_args() -> Any:
     parser = ArgumentParser("Merge PR into default branch")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--on-green", action="store_true")
+    parser.add_argument("--on-mandatory", action="store_true")
     parser.add_argument("--land-time-checks", action="store_true")
     parser.add_argument("--revert", action="store_true")
     parser.add_argument("--force", action="store_true")
@@ -718,20 +719,7 @@ class GitHubPR:
     def merge_into(self, repo: GitRepo, *, force: bool = False, dry_run: bool = False, comment_id: Optional[int] = None) -> None:
         # Raises exception if matching rule is not found
         find_matching_merge_rule(self, repo, force=force, skip_internal_checks=can_skip_internal_checks(self, comment_id))
-        if repo.current_branch() != self.default_branch():
-            repo.checkout(self.default_branch())
-        if not self.is_ghstack_pr():
-            # Adding the url here makes it clickable within the Github UI
-            approved_by_urls = ', '.join(prefix_with_github_url(login) for login in self.get_approved_by())
-            msg = self.get_title() + f" (#{self.pr_num})\n\n" + self.get_body()
-            msg += f"\nPull Request resolved: {self.get_pr_url()}\n"
-            msg += f"Approved by: {approved_by_urls}\n"
-            pr_branch_name = f"__pull-request-{self.pr_num}__init__"
-            repo.fetch(f"pull/{self.pr_num}/head", pr_branch_name)
-            repo._run_git("merge", "--squash", pr_branch_name)
-            repo._run_git("commit", f"--author=\"{self.get_author()}\"", "-m", msg)
-        else:
-            self.merge_ghstack_into(repo, force, comment_id=comment_id)
+        self.merge_changes(self, repo, force, comment_id)
 
         repo.push(self.default_branch(), dry_run)
         if not dry_run:
@@ -757,7 +745,7 @@ class GitHubPR:
         self.merge_changes(repo, False)
         branch_name = f'landtime/{self.pr_num}'
         repo._run_git('checkout', "-b", branch_name)
-        repo._run_git('push', '-u', 'origin', branch_name, '-force')
+        repo._run_git('push', '-u', 'origin', branch_name, '--force')
         commit = repo.get_commit('HEAD').commit_hash
         return commit
 
@@ -990,6 +978,10 @@ def merge(pr_num: int, repo: GitRepo,
     if (datetime.utcnow() - pr.last_pushed_at()).days > stale_pr_days:
         raise RuntimeError("This PR is too stale; the last push date was more than 3 days ago. Please rebase and try again.")
 
+    if land_time:
+        pr.merge_changes()
+        pr.create_land_time_check_branch()
+
     start_time = time.time()
     last_exception = ''
     elapsed_time = 0.0
@@ -1058,11 +1050,12 @@ def main() -> None:
 
     try:
         merge(args.pr_num, repo,
-            dry_run=args.dry_run,
-            force=args.force,
-            comment_id=args.comment_id,
-            on_green=args.on_green,
-            mandatory_only=args.on_mandatory)
+              dry_run=args.dry_run,
+              force=args.force,
+              comment_id=args.comment_id,
+              on_green=args.on_green,
+              mandatory_only=args.on_mandatory,
+              land_time=args.land_time_checks)
     except Exception as e:
         handle_exception(e)
 
