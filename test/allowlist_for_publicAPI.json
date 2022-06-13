@@ -2387,7 +2387,7 @@
     "Tuple",
     "Union"
   ],
-  "torch.nn.quantized.functional": [
+  "torch.ao.nn.quantized.functional": [
     "List",
     "Optional",
     "Tensor"
