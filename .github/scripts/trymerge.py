@@ -719,7 +719,7 @@ class GitHubPR:
     def merge_into(self, repo: GitRepo, *, force: bool = False, dry_run: bool = False, comment_id: Optional[int] = None) -> None:
         # Raises exception if matching rule is not found
         find_matching_merge_rule(self, repo, force=force, skip_internal_checks=can_skip_internal_checks(self, comment_id))
-        self.merge_changes(self, repo, force, comment_id)
+        self.merge_changes(repo, force, comment_id)
 
         repo.push(self.default_branch(), dry_run)
         if not dry_run:
@@ -742,38 +742,14 @@ class GitHubPR:
             self.merge_ghstack_into(repo, force, comment_id=comment_id)
 
     def create_land_time_check_branch(self, repo: GitRepo) -> str:
-        self.merge_changes(repo, False)
+        if repo.current_branch() != self.default_branch():
+            repo.checkout(self.default_branch())
         branch_name = f'landtime/{self.pr_num}'
+        repo._run_git('branch', "-d", branch_name)
         repo._run_git('checkout', "-b", branch_name)
         repo._run_git('push', '-u', 'origin', branch_name, '--force')
         commit = repo.get_commit('HEAD').commit_hash
         return commit
-
-    def validate_land_time_checks(self, repo: GitRepo, commit: str) -> bool:
-        [owner, name] = repo.gh_owner_and_name()
-        checks = fetch_json_dict(f'https://api.github.com/repos/{owner}/{name}/commits/{commit}/check-runs')
-        if checks['total_count'] == 0:
-            print('There we no checks found for this SHA. They may not have been schedule. Retrying in 60 seconds')
-            time.sleep(60)
-            return False
-        check_runs = checks['check_runs']
-        pending_jobs = []
-        failed_jobs = []
-        for check_run in check_runs:
-            name = check_run['name']
-            conclusion = check_run['conclusion']
-            if conclusion == 'failure':
-                failed_jobs.append(name)
-            elif conclusion is None:
-                pending_jobs.append(name)
-
-        if len(failed_jobs) > 0:
-            raise RuntimeError(f"Failed to merge: some checks failed: {', '.join(failed_jobs)}")
-        if len(pending_jobs) > 0:
-            raise MandatoryChecksMissingError(f"Refusing to merge as mandatory check(s) {', '.join(pending_jobs)} are not yet run")
-        if len(pending_jobs) == 0 and len(failed_jobs) == 0:
-            return True
-        return False
 
 
 class MandatoryChecksMissingError(Exception):
@@ -959,6 +935,31 @@ def try_revert(repo: GitRepo, pr: GitHubPR, *,
 def prefix_with_github_url(suffix_str: str) -> str:
     return f"https://github.com/{suffix_str}"
 
+def validate_land_time_checks(repo: GitRepo, commit: str) -> bool:
+    [owner, name] = repo.gh_owner_and_name()
+    checks = fetch_json_dict(f'https://api.github.com/repos/{owner}/{name}/commits/{commit}/check-runs')
+    if checks['total_count'] == 0:
+        print('There we no checks found for this SHA. They may not have been schedule. Retrying in 60 seconds')
+        time.sleep(60)
+        return False
+    check_runs = checks['check_runs']
+    pending_jobs = []
+    failed_jobs = []
+    for check_run in check_runs:
+        name = check_run['name']
+        conclusion = check_run['conclusion']
+        if conclusion == 'failure':
+            failed_jobs.append(name)
+        elif conclusion is None:
+            pending_jobs.append(name)
+
+    if len(failed_jobs) > 0:
+        raise RuntimeError(f"Failed to merge: some checks failed: {', '.join(failed_jobs)}")
+    if len(pending_jobs) > 0:
+        raise MandatoryChecksMissingError(f"Refusing to merge as land time check(s) {', '.join(pending_jobs)} are not yet run")
+    if len(pending_jobs) == 0 and len(failed_jobs) == 0:
+        return True
+    return False
 
 def merge(pr_num: int, repo: GitRepo,
           dry_run: bool = False,
@@ -979,8 +980,8 @@ def merge(pr_num: int, repo: GitRepo,
         raise RuntimeError("This PR is too stale; the last push date was more than 3 days ago. Please rebase and try again.")
 
     if land_time:
-        pr.merge_changes()
-        pr.create_land_time_check_branch()
+        pr.merge_changes(repo, force=force, comment_id=comment_id)
+        commit = pr.create_land_time_check_branch(repo)
 
     start_time = time.time()
     last_exception = ''
@@ -996,12 +997,15 @@ def merge(pr_num: int, repo: GitRepo,
             find_matching_merge_rule(pr, repo)
             pending = pr_get_pending_checks(pr)
             failing = pr_get_failed_checks(pr)
+
             if (not mandatory_only and on_green) and len(failing) > 0:
                 raise RuntimeError(f"{len(failing)} additional jobs have failed, first few of them are: " +
                                    ' ,'.join(f"[{x[0]}]({x[1]})" for x in failing[:5]))
             if (not mandatory_only and on_green) and len(pending) > 0:
                 raise MandatoryChecksMissingError(f"Still waiting for {len(pending)} additional jobs to finish, " +
                                                   f"first few of them are: {' ,'.join(x[0] for x in pending[:5])}")
+            if land_time and validate_land_time_checks(repo, commit):
+                return pr.merge_into(repo, dry_run=dry_run, force=force, comment_id=comment_id)
             return pr.merge_into(repo, dry_run=dry_run, force=force, comment_id=comment_id)
         except MandatoryChecksMissingError as ex:
             last_exception = str(ex)
