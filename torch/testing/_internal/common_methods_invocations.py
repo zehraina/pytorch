@@ -20403,6 +20403,7 @@ python_ref_db = [
     ElementwiseBinaryPythonRefInfo(
         "_refs.gcd",
         torch_opinfo_name="gcd",
+        supports_nvfuser=False,
     ),
     ElementwiseBinaryPythonRefInfo(
         "_refs.ge",
@@ -20437,6 +20438,7 @@ python_ref_db = [
     ElementwiseBinaryPythonRefInfo(
         "_refs.lcm",
         torch_opinfo_name="lcm",
+        supports_nvfuser=False,
     ),
     ElementwiseBinaryPythonRefInfo(
         "_refs.le",
@@ -20547,6 +20549,7 @@ python_ref_db = [
     ElementwiseBinaryPythonRefInfo(
         "_refs.remainder",
         torch_opinfo_name="remainder",
+        supports_nvfuser=False,
         skips=(
             DecorateInfo(unittest.skip("Skipped!"), 'TestCommon', 'test_python_ref',
                          dtypes=(torch.bfloat16,), device_type='cpu'),
