@@ -744,7 +744,7 @@ class GitHubPR:
     def create_land_time_check_branch(self, repo: GitRepo) -> str:
         if repo.current_branch() != self.default_branch():
             repo.checkout(self.default_branch())
-        branch_name = f'landtime/{self.pr_num}'
+        branch_name = f'landchecks/{self.pr_num}'
         repo._run_git('branch', "-d", branch_name)
         repo._run_git('checkout', "-b", branch_name)
         repo._run_git('push', '-u', 'origin', branch_name, '--force')
@@ -967,6 +967,7 @@ def merge(pr_num: int, repo: GitRepo,
           comment_id: Optional[int] = None,
           mandatory_only: bool = False,
           on_green: bool = False,
+          land_checks: bool = False,
           timeout_minutes: int = 400,
           stale_pr_days: int = 3) -> None:
     repo = GitRepo(get_git_repo_dir(), get_git_remote_name())
@@ -979,7 +980,7 @@ def merge(pr_num: int, repo: GitRepo,
     if (datetime.utcnow() - pr.last_pushed_at()).days > stale_pr_days:
         raise RuntimeError("This PR is too stale; the last push date was more than 3 days ago. Please rebase and try again.")
 
-    if land_time:
+    if land_checks:
         pr.merge_changes(repo, force=force, comment_id=comment_id)
         commit = pr.create_land_time_check_branch(repo)
 
@@ -1004,7 +1005,7 @@ def merge(pr_num: int, repo: GitRepo,
             if (not mandatory_only and on_green) and len(pending) > 0:
                 raise MandatoryChecksMissingError(f"Still waiting for {len(pending)} additional jobs to finish, " +
                                                   f"first few of them are: {' ,'.join(x[0] for x in pending[:5])}")
-            if land_time and validate_land_time_checks(repo, commit):
+            if land_checks and validate_land_time_checks(repo, commit):
                 return pr.merge_into(repo, dry_run=dry_run, force=force, comment_id=comment_id)
             return pr.merge_into(repo, dry_run=dry_run, force=force, comment_id=comment_id)
         except MandatoryChecksMissingError as ex:
@@ -1059,7 +1060,7 @@ def main() -> None:
               comment_id=args.comment_id,
               on_green=args.on_green,
               mandatory_only=args.on_mandatory,
-              land_time=args.land_time_checks)
+              land_checks=args.land_checks)
     except Exception as e:
         handle_exception(e)
 

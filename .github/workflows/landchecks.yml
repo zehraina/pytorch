@@ -1,10 +1,10 @@
-name: landtime
+name: landchecks
 
 on:
   pull_request:
   push:
     branches:
-      - landtime/*
+      - landchecks/*
   workflow_dispatch:
 
 concurrency:
