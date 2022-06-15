@@ -16,13 +16,15 @@ import itertools
 from collections import defaultdict
 from torch._six import inf
 from torch.nn import Parameter
-from torch.testing._internal.common_utils import gradcheck, gradgradcheck, run_tests, run_tests, TestCase, download_file, TEST_WITH_UBSAN
+from torch.testing._internal.common_utils import \
+    (gradcheck, gradgradcheck, run_tests, TestCase, download_file,
+     TEST_WITH_UBSAN)
 from torch.testing._comparison import TensorLikePair
 from torch.testing._internal.common_dtype import get_all_dtypes
 import torch.backends.mps
 from torch.distributions import Uniform, Exponential
 from torch.testing._internal.common_methods_invocations import op_db
-from torch.testing._internal.common_device_type import dtypes, ops, instantiate_device_type_tests
+from torch.testing._internal.common_device_type import ops, instantiate_device_type_tests
 from torch.testing import make_tensor
 from functools import partial
 from torch.testing._internal.common_nn import NNTestCase
