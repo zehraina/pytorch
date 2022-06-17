@@ -17,7 +17,6 @@ from ..utils import (
 from .graph_module import (
     is_observed_standalone_module,
 )
-
 from typing import Any, Dict, List, Callable, Optional, Tuple, Set
 
 MatchResult = Tuple[Node, List[Node], Optional[Pattern], QuantizeHandler,
@@ -219,3 +218,9 @@ def find_matches(
                 standalone_module_qconfig)
 
     return match_map
+
+__all__ = [
+    "MatchResult",
+    "is_match",
+    "find_matches",
+]
