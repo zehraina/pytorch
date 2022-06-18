@@ -4411,6 +4411,10 @@ class TestLinalgMPS(TestCase):
         m2 = maybe_transpose(t3, torch.randn(50, 25, device=device).to(dtype))
         self._test_addmm_addmv(torch.addmm, M, m1, m2, transpose_out=t4)
 
+# These tests were taken from test/test_view_ops.py
+# They are subset of those tests as currently only this subset is working.
+# This whole `class` will be removed when we add generic device testing. There
+# are no additional tests added apart from what is part of test_view_ops.py
 class TestViewOpsMPS(TestCase):
     exact_dtype = True
 
@@ -4422,7 +4426,7 @@ class TestViewOpsMPS(TestCase):
             return False
         # Note: only validates storage on native device types
         # because some accelerators, like XLA, do not expose storage
-        if base.device.type == 'cpu' or base.device.type == 'cuda':
+        if base.device.type == 'mps':
             if base.storage().data_ptr() != other.storage().data_ptr():
                 return False
 
@@ -4446,7 +4450,7 @@ class TestViewOpsMPS(TestCase):
         v = torch.squeeze(t)
         self.assertTrue(self.is_view_of(t, v))
         v[0, 1] = 0
-        self.assertEqual(t, v._base)
+        self.assertTrue(t is v._base)
 
     def test_squeeze_inplace_view(self, device="mps"):
         t = torch.ones(5, 5, device=device)
@@ -4454,7 +4458,7 @@ class TestViewOpsMPS(TestCase):
         v = v.squeeze_()
         self.assertTrue(self.is_view_of(t, v))
         v[0, 1] = 0
-        self.assertEqual(t, v._base)
+        self.assertTrue(t is v._base)
 
     def test_unsqueeze_view(self, device="mps"):
         t = torch.ones(5, 5, device=device)
@@ -5038,14 +5042,14 @@ class TestViewOpsMPS(TestCase):
         self.assertRaises(RuntimeError, lambda: tensor.view(15, -1, -1))
 
     # RuntimeError: Invalid device for storage: mps
-    # def test_contiguous(self, device="mps"):
-    #     x = torch.randn(1, 16, 5, 5, device=device)
-    #     self.assertTrue(x.is_contiguous())
-    #     stride = list(x.stride())
-    #     stride[0] = 20
-    #     # change the stride in dimension 0. the tensor is still contiguous because size[0] is 1
-    #     x.set_(x.storage(), 0, x.size(), stride)
-    #     self.assertTrue(x.is_contiguous())
+    def test_contiguous(self, device="mps"):
+        x = torch.randn(1, 16, 5, 5, device=device)
+        self.assertTrue(x.is_contiguous())
+        stride = list(x.stride())
+        stride[0] = 20
+        # change the stride in dimension 0. the tensor is still contiguous because size[0] is 1
+        x.set_(x.storage(), 0, x.size(), stride)
+        self.assertTrue(x.is_contiguous())
 
     def test_resize_all_dtypes_and_devices(self, device="mps"):
         shape = (2, 2)
@@ -5191,8 +5195,8 @@ class TestNoRegression(TestCase):
         with self.assertRaisesRegex(AssertionError, "Tensor-likes are not close!"):
             torch.testing.assert_close(a, inf)
 
-        # with self.assertRaisesRegex(AssertionError, "Tensor-likes are not close!"):
-            # torch.testing.assert_close(a, nan)
+        with self.assertRaisesRegex(AssertionError, "Tensor-likes are not close!"):
+            torch.testing.assert_close(a, nan)
 
     @unittest.expectedFailure
     def test_mps_compat(self):
